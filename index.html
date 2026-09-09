@@ -50,9 +50,26 @@
   .screen{display:none;}
   .screen.active{display:block;}
 
-  header.top{text-align:center;padding:10px 0 18px;}
+  header.top{text-align:center;padding:10px 0 12px;position:relative;}
   header.top .medal{font-size:2.4rem;line-height:1;}
   header.top h1{font-size:1.25rem;margin:6px 0 0;font-weight:700;}
+  .btn-gear{
+    position:absolute;top:8px;right:0;width:40px;height:40px;border-radius:50%;
+    border:1px solid #3a3a3a;background:var(--field);color:#fff;font-size:1.15rem;
+    cursor:pointer;
+  }
+
+  /* Cuadrícula compacta de acciones: 3 columnas, ícono arriba y texto abajo */
+  .action-grid{
+    display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:14px 0;
+  }
+  .action-btn{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+    background:var(--field);border:1px solid #3a3a3a;border-radius:12px;
+    padding:12px 4px;color:#fff;font-family:inherit;cursor:pointer;
+  }
+  .action-btn .ic{font-size:1.3rem;}
+  .action-btn span:last-child{font-size:.72rem;font-weight:600;text-align:center;line-height:1.15;}
 
   input[type=text], textarea, select{
     width:100%;
@@ -101,6 +118,26 @@
   .field-block{margin-bottom:14px;}
   .field-row{display:flex;gap:14px;margin-bottom:14px;}
   .field-row>div{flex:1;}
+
+  /* Libro, Capítulo y Versículo en una sola fila: el libro se lleva casi
+     todo el ancho, capítulo y versículo quedan chicos al lado */
+  .field-row-lcv{display:flex;gap:6px;margin-bottom:14px;align-items:flex-end;}
+  .field-row-lcv .col-libro{flex:1;min-width:0;}
+  .field-row-lcv .col-cap, .field-row-lcv .col-ver{flex:0 0 52px;}
+  .field-row-lcv .selectbtn{padding-left:8px;padding-right:6px;}
+  .field-row-lcv .col-libro #libroNombre{
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block;min-width:0;flex:1;
+  }
+  .field-row-lcv .col-cap .selectbtn, .field-row-lcv .col-ver .selectbtn{
+    justify-content:center;gap:2px;padding-left:4px;padding-right:4px;
+  }
+  /* Botones de tamaño de letra (+/-), compactos, mismo alto que los selectbtn */
+  .field-row-lcv .col-size{flex:0 0 84px;}
+  .size-mini{display:flex;gap:4px;}
+  .size-mini-btn{
+    flex:1;height:47px;border-radius:12px;border:1px solid #3a3a3a;
+    background:var(--field);color:#fff;font-size:1.2rem;font-weight:700;cursor:pointer;
+  }
 
   .selectbtn{
     width:100%;text-align:left;
@@ -319,6 +356,7 @@
     <header class="top">
       <div class="medal">🏅</div>
       <h1>Proyector Bíblico RV</h1>
+      <button class="btn-gear" id="btnAjustes" title="Ajustes de pantalla">⚙</button>
     </header>
 
     <div class="field-block">
@@ -346,47 +384,46 @@
       <div class="teclado-resultados" id="tecladoResultados"></div>
     </div>
 
-    <div class="field-block">
-      <label class="field-label">Libro:</label>
-      <button class="selectbtn" id="btnLibro">
-        <span id="libroNombre">Génesis</span><span class="chev">▾</span>
-      </button>
-    </div>
-
-    <div class="field-row">
-      <div>
-        <label class="field-label">Capítulo:</label>
+    <div class="field-row-lcv">
+      <div class="col-libro">
+        <label class="field-label">Libro:</label>
+        <button class="selectbtn" id="btnLibro">
+          <span id="libroNombre">Génesis</span><span class="chev">▾</span>
+        </button>
+      </div>
+      <div class="col-cap">
+        <label class="field-label">Cap.</label>
         <button class="selectbtn" id="btnCapitulo"><span id="capituloNum">1</span><span class="chev">▾</span></button>
       </div>
-      <div>
-        <label class="field-label">Versículo:</label>
+      <div class="col-ver">
+        <label class="field-label">Vers.</label>
         <button class="selectbtn" id="btnVersiculo"><span id="versiculoNum">1</span><span class="chev">▾</span></button>
+      </div>
+      <div class="col-size">
+        <label class="field-label">Letra</label>
+        <div class="size-mini">
+          <button class="size-mini-btn" id="btnAchicar" title="Achicar letra">−</button>
+          <button class="size-mini-btn" id="btnAgrandar" title="Agrandar letra">+</button>
+        </div>
       </div>
     </div>
 
-    <div class="row-btns">
-      <button class="btn btn-half" id="btnAgrandar">+ Agrandar</button>
-      <button class="btn btn-half" id="btnAchicar">− Achicar</button>
-    </div>
-
-    <button class="btn btn-gold" id="btnFavorito">⭐ Guardar en favoritos</button>
-    <button class="btn btn-blue" id="btnBuscar">🔍 Buscar libro o versículo</button>
     <button class="btn btn-green" id="btnProyectar">⤢ Proyectar pantalla completa</button>
 
-    <hr>
-
-    <button class="btn btn-dark" id="btnLetras">♫ Letras de canciones</button>
-    <button class="btn btn-dark" id="btnImagenes">🖼 Mis Imágenes</button>
+    <div class="action-grid">
+      <button class="action-btn" id="btnFavorito"><span class="ic">⭐</span><span>Favoritos</span></button>
+      <button class="action-btn" id="btnBuscar"><span class="ic">🔍</span><span>Buscar</span></button>
+      <button class="action-btn" id="btnLetras"><span class="ic">♫</span><span>Canciones</span></button>
+      <button class="action-btn" id="btnImagenes"><span class="ic">🖼</span><span>Imágenes</span></button>
+      <button class="action-btn" id="btnFavoritosList"><span class="ic">♡</span><span>Mis Favoritos</span></button>
+      <button class="action-btn" id="btnHistorial"><span class="ic">↻</span><span>Historial</span></button>
+    </div>
 
     <!-- Miniaturas de las imágenes ya subidas: toca una para proyectarla -->
     <div class="quick-images" id="quickImages" style="display:none;">
       <div class="quick-images-strip" id="quickImagesStrip"></div>
       <div class="quick-images-label" id="quickImagesLabel"></div>
     </div>
-
-    <button class="btn btn-dark" id="btnFavoritosList">♡ Mis Favoritos</button>
-    <button class="btn btn-dark" id="btnHistorial">↻ Historial Reciente</button>
-    <button class="btn btn-dark" id="btnAjustes">⚙ Ajustes de Pantalla</button>
 
     <div class="display-panel" id="displayPanel">
       <div id="displayEmpty">Selecciona un versículo para proyectarlo aquí.</div>
