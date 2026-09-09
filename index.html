@@ -111,6 +111,10 @@
   }
   .selectbtn .chev{color:var(--muted);font-size:.8rem;}
 
+  /* Cuadrícula de versiones: 2 columnas, tantas filas como haga falta */
+  .version-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .ver-select{padding:12px 10px;font-size:.92rem;}
+
   button{font-family:inherit;cursor:pointer;border:none;color:#fff;}
   .btn{
     display:block;width:100%;padding:15px 14px;border-radius:var(--radius);
@@ -149,6 +153,11 @@
   }
   body.projecting #displayControls .btn{padding:8px 14px;font-size:.85rem;}
   body.projecting #displayControls .icon-btn{width:38px;height:38px;font-size:1rem;}
+    /* Botones pequeños de versión en proyección */
+  .ver-btn-mini{
+    padding:8px 12px;border-radius:10px;background:var(--field);
+    color:#fff;font-size:.85rem;font-weight:700;border:1px solid #3a3a3a;
+                }
 
   /* ---- Imágenes: galería y acceso rápido ---- */
   .images-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:14px;}
@@ -312,14 +321,12 @@
       <h1>Proyector Bíblico RV</h1>
     </header>
 
-    <div class="field-row">
-      <div>
-        <label class="field-label">Versión:</label>
-        <button class="selectbtn" id="verBtn1909" style="justify-content:center;background:var(--blue);">1 · RV 1909</button>
-      </div>
-      <div>
-        <label class="field-label">&nbsp;</label>
-        <button class="selectbtn" id="verBtn1960" style="justify-content:center;">2 · RV 1960</button>
+    <div class="field-block">
+      <label class="field-label">Versión:</label>
+      <div class="version-grid" id="versionGrid">
+        <button class="selectbtn ver-select" id="verBtn1909" style="justify-content:center;background:var(--blue);">1 · RV 1909</button>
+        <button class="selectbtn ver-select" id="verBtn1960" style="justify-content:center;">2 · RV 1960</button>
+        <button class="selectbtn ver-select" id="verBtnNVI" style="justify-content:center;">3 · NVI</button>
       </div>
     </div>
 
@@ -389,7 +396,10 @@
       <div class="display-controls" id="displayControls" style="display:none;">
         <button class="btn btn-dark" id="btnSalir" style="width:auto;">Entrar</button>
         <button class="icon-btn" id="btnCopiar" title="Copiar">⧉</button>
-        <button class="icon-btn" id="btnCompartir" title="Compartir">↗</button>
+        <button class="icon-btn" id="btnCompartir" title="Compartir">↗</button><span style="width:1px;height:24px;background:#3a3a3a;"></span>
+        <button class="ver-btn-mini" id="proyBtn1909" style="background:var(--blue);">RV1909</button>
+        <button class="ver-btn-mini" id="proyBtn1960">RV1960</button>
+        <button class="ver-btn-mini" id="proyBtnNVI">NVI</button>
       </div>
 
       <!-- Miniaturas dentro del panel: cambiar de imagen sin salir de la proyección -->
@@ -631,7 +641,7 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   }
   document.querySelectorAll('[data-go-home]').forEach(b => b.addEventListener('click', () => showScreen('screen-home')));
 
-  // ---------- Selector de versión (RV1909 / RV1960) ----------
+  // ---------- Selector de versión (RV1909 / RV1960 / NVI) ----------
   state.version = '1909';
   function selectVersion(v){
     if(v === state.version) return;
@@ -639,6 +649,11 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
       cargar1960((ok) => {
         if(!ok) return;               // si falla, se queda en la actual
         aplicarVersion('1960');
+      });
+    } else if(v === 'NVI'){
+      cargarNVI((ok) => {
+        if(!ok) return;
+        aplicarVersion('NVI');
       });
     } else {
       aplicarVersion('1909');
@@ -669,6 +684,10 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   }
   $('verBtn1909').addEventListener('click', () => selectVersion('1909'));
   $('verBtn1960').addEventListener('click', () => selectVersion('1960'));
+  $('verBtnNVI').addEventListener('click', () => selectVersion('NVI'));
+  $('proyBtn1909').addEventListener('click', () => selectVersion('1909'));
+  $('proyBtn1960').addEventListener('click', () => selectVersion('1960'));
+  $('proyBtnNVI').addEventListener('click', () => selectVersion('NVI'));
   $('btnSalirLicencia').addEventListener('click', () => showScreen('screen-home'));
 
   function showTranslationLabel(text){
@@ -682,18 +701,22 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     lbl.textContent = text;
   }
 
-  // ---------- Versiones de la Biblia (1909 embebida, 1960 en archivo aparte) ----------
+  // ---------- Versiones de la Biblia (1909 embebida, 1960 y NVI en archivo aparte) ----------
   const VERSION_KEY = 'proyector_version_activa';
   let BIBLIA_1960 = null;          // se llena al cargar biblia-1960.js
+  let BIBLIA_NVI = null;           // se llena al cargar biblia-nvi.js
   let cargando1960 = false;
+  let cargandoNVI = false;
 
   function datosVersionActiva(){
-    return state.version === '1960' ? BIBLIA_1960 : window.BIBLIA_1909;
+    if(state.version === '1960') return BIBLIA_1960;
+    if(state.version === 'NVI') return BIBLIA_NVI;
+    return window.BIBLIA_1909;
   }
   function etiquetaVersion(){
-    return state.version === '1960'
-      ? 'Santa Biblia — Reina Valera 1960 · sin conexión'
-      : 'Santa Biblia — Reina Valera 1909 · sin conexión';
+    if(state.version === '1960') return 'Santa Biblia — Reina Valera 1960 · sin conexión';
+    if(state.version === 'NVI') return 'Santa Biblia — Nueva Versión Internacional · sin conexión';
+    return 'Santa Biblia — Reina Valera 1909 · sin conexión';
   }
 
   // Carga el archivo del RV1960 solo la primera vez que se pide
@@ -726,6 +749,34 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     document.head.appendChild(s);
   }
 
+  // Carga el archivo de la NVI solo la primera vez que se pide
+  function cargarNVI(alTerminar){
+    if(BIBLIA_NVI){ alTerminar(true); return; }
+    if(cargandoNVI) return;
+    cargandoNVI = true;
+    setStatus('Cargando Nueva Versión Internacional...');
+    const s = document.createElement('script');
+    s.src = 'biblia-nvi.js';
+    s.onload = () => {
+      cargandoNVI = false;
+      let datos = window.BIBLIA_NVI_DATA;
+      if(datos && datos.length){
+        BIBLIA_NVI = datos;
+        alTerminar(true);
+      } else {
+        setStatus('No se pudo leer el archivo de la NVI.');
+        alTerminar(false);
+      }
+    };
+    s.onerror = () => {
+      cargandoNVI = false;
+      setStatus('Falta el archivo biblia-nvi.js en la app.');
+      setTimeout(()=>setStatus(''), 4000);
+      alTerminar(false);
+    };
+    document.head.appendChild(s);
+  }
+
   // Arma la lista de libros a partir de la versión activa
   function construirLibros(){
     const datos = datosVersionActiva();
@@ -744,10 +795,15 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
 
   function init(){
     setStatus('Cargando Biblia...');
-    state.version = localStorage.getItem(VERSION_KEY) === '1960' ? '1960' : '1909';
+    const guardada = localStorage.getItem(VERSION_KEY);
+    state.version = (guardada === '1960' || guardada === 'NVI') ? guardada : '1909';
     if(state.version === '1960'){
-      // Si la última vez quedó en 1960, se intenta cargar ese texto
       cargar1960((ok) => {
+        if(!ok){ state.version = '1909'; }
+        arrancarVersion();
+      });
+    } else if(state.version === 'NVI'){
+      cargarNVI((ok) => {
         if(!ok){ state.version = '1909'; }
         arrancarVersion();
       });
@@ -770,6 +826,11 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     const activo = 'var(--blue)', inactivo = 'var(--field)';
     $('verBtn1909').style.background = state.version === '1909' ? activo : inactivo;
     $('verBtn1960').style.background = state.version === '1960' ? activo : inactivo;
+    $('verBtnNVI').style.background = state.version === 'NVI' ? activo : inactivo;
+    const b1 = $('proyBtn1909'), b2 = $('proyBtn1960'), b3 = $('proyBtnNVI');
+    if(b1) b1.style.background = state.version === '1909' ? activo : inactivo;
+    if(b2) b2.style.background = state.version === '1960' ? activo : inactivo;
+    if(b3) b3.style.background = state.version === 'NVI' ? activo : inactivo;
   }
 
   function loadChapter(chapterNum, autoShow){

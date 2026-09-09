@@ -4,7 +4,7 @@
 // de versión de abajo (v1.1 -> v1.2 -> v1.3 ...). Eso hace que todos los
 // que ya tienen la app instalada reciban la actualización automáticamente,
 // sin tener que borrar el caché del teléfono.
-const CACHE_VERSION = 'v1.1';
+const CACHE_VERSION = 'v1.2';
 const CACHE_NAME = 'proyector-biblico-' + CACHE_VERSION;
 
 // Archivos que se guardan apenas se instala la app.
