@@ -432,6 +432,8 @@
       <div id="displayRef" style="display:none;"></div>
       <div class="display-controls" id="displayControls" style="display:none;">
         <button class="btn btn-dark" id="btnSalir" style="width:auto;">Entrar</button>
+        <button class="icon-btn" id="btnAchicarProy" title="Achicar letra">−</button>
+        <button class="icon-btn" id="btnAgrandarProy" title="Agrandar letra">+</button>
         <button class="icon-btn" id="btnCopiar" title="Copiar">⧉</button>
         <button class="icon-btn" id="btnCompartir" title="Compartir">↗</button><span style="width:1px;height:24px;background:#3a3a3a;"></span>
         <button class="ver-btn-mini" id="proyBtn1909" style="background:var(--blue);">RV1909</button>
@@ -985,6 +987,8 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   $('btnAchicar').addEventListener('click', () => applySize(Math.max(state.fontSize-4, 12)));
   $('btnAgrandarSong').addEventListener('click', () => applySize(Math.min(state.fontSize+4, 96)));
   $('btnAchicarSong').addEventListener('click', () => applySize(Math.max(state.fontSize-4, 12)));
+  $('btnAgrandarProy').addEventListener('click', () => applySize(Math.min(state.fontSize+4, 96)));
+  $('btnAchicarProy').addEventListener('click', () => applySize(Math.max(state.fontSize-4, 12)));
 
   // ---------- Pantalla completa (propia, sin depender de la API del navegador) ----------
   // Algunos visores WebView (como el de App Inventor) no soportan bien
