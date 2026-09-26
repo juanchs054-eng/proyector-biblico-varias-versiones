@@ -59,6 +59,7 @@
 
   header.top{text-align:center;padding:10px 0 12px;position:relative;}
   header.top .medal{font-size:2.4rem;line-height:1;}
+  header.top .app-logo{width:58px;height:58px;border-radius:14px;display:block;margin:0 auto;object-fit:cover;}
   header.top h1{font-size:1.25rem;margin:6px 0 0;font-weight:700;}
   .btn-gear{
     position:absolute;top:8px;right:0;width:40px;height:40px;border-radius:50%;
@@ -388,7 +389,20 @@
   .share-opt{background:#242424;border-radius:14px;padding:16px 8px;display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;font-size:.82rem;}
   .share-opt .ic{font-size:1.5rem;}
 
-  .status{color:var(--muted);font-size:.9rem;text-align:center;margin-bottom:10px;min-height:1.2em;}
+  /* Avisos cortos ("Copiado ✓", "Cargando..."): flotan abajo y no ocupan espacio */
+  .status{
+    position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);
+    max-width:calc(100% - 32px);background:#2b2b2b;color:#fff;border:1px solid #3a3a3a;
+    border-radius:12px;padding:9px 14px;font-size:.85rem;text-align:center;z-index:1000;
+    box-shadow:0 6px 20px rgba(0,0,0,.5);pointer-events:none;
+  }
+  .status:empty{display:none;}
+  /* "Versión:" a la izquierda y "Santa Biblia — ... · sin conexión" a la derecha */
+  .version-linea{display:flex;align-items:baseline;justify-content:flex-start;gap:6px;margin-bottom:8px;}
+  .version-linea .field-label{margin:0;flex-shrink:0;}
+  #translationLabel{color:var(--muted);font-size:.72rem;text-align:left;line-height:1.25;min-width:0;flex:1;white-space:nowrap;overflow:hidden;}
+  /* Versiones pegadas al buscador */
+  .field-block:has(#versionGrid){margin-bottom:10px;}
 
   ::-webkit-scrollbar{width:6px;}
   ::-webkit-scrollbar-thumb{background:#333;border-radius:4px;}
@@ -401,13 +415,16 @@
   <!-- ============ HOME ============ -->
   <div class="screen active" id="screen-home">
     <header class="top">
-      <div class="medal">🏅</div>
+      <div class="medal"><img class="app-logo" src="icon-192.png" alt="Logo" onerror="this.replaceWith(document.createTextNode('🏅'))"></div>
       <h1>Proyector Bíblico RV</h1>
       <button class="btn-gear" id="btnAjustes" title="Ajustes de pantalla">⚙</button>
     </header>
 
     <div class="field-block">
-      <label class="field-label">Versión:</label>
+      <div class="version-linea">
+        <label class="field-label">Versión:</label>
+        <span id="translationLabel"></span>
+      </div>
       <div class="version-grid" id="versionGrid">
         <button class="selectbtn ver-select" id="verBtn1909" style="justify-content:center;background:var(--blue);">1 · RV 1909</button>
         <button class="selectbtn ver-select" id="verBtn1960" style="justify-content:center;">2 · RV 1960</button>
@@ -791,11 +808,23 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     if(!lbl){
       lbl = document.createElement('div');
       lbl.id = 'translationLabel';
-      lbl.style.cssText = 'text-align:center;color:var(--muted);font-size:.8rem;margin-top:-10px;margin-bottom:14px;';
-      document.querySelector('header.top').after(lbl);
+      document.querySelector('.version-linea').appendChild(lbl);
     }
     lbl.textContent = text;
+    ajustarEtiquetaVersion();
   }
+  // Achica un poco la letra si el texto no cabe, para que siempre quede en una sola línea
+  function ajustarEtiquetaVersion(){
+    const lbl = $('translationLabel');
+    if(!lbl || !lbl.offsetWidth) return;
+    let tam = 11.5;                       // ≈ .72rem
+    lbl.style.fontSize = tam + 'px';
+    while(lbl.scrollWidth > lbl.clientWidth && tam > 8){
+      tam -= 0.25;
+      lbl.style.fontSize = tam + 'px';
+    }
+  }
+  window.addEventListener('resize', ajustarEtiquetaVersion);
 
   // ---------- Versiones de la Biblia (1909 embebida, 1960 y NVI en archivo aparte) ----------
   const VERSION_KEY = 'proyector_version_activa';
