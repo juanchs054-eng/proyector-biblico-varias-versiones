@@ -98,20 +98,28 @@
   .teclado-libros{
     background:#1a1a1a;border-radius:var(--radius);padding:12px;margin-bottom:16px;
   }
-  .teclado-letras{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;}
+  /* Un solo teclado: números arriba, letras debajo, guion y borrar al final */
+  .teclado-letras{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;max-width:360px;margin:0 auto;}
   .tecla{
-    width:38px;height:38px;border:none;border-radius:9px;background:var(--darkbtn-2);
-    color:#fff;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;
+    height:34px;padding:0;border:none;border-radius:8px;background:var(--darkbtn-2);
+    color:#fff;font-family:inherit;font-size:.9rem;font-weight:700;cursor:pointer;
   }
+  .tecla.tecla-num{background:#2a3440;}
+  .tecla.doble{grid-column:span 2;}
   .tecla.activa{background:var(--blue);}
   .tecla.vacia{opacity:.3;}
-  .teclado-resultados{display:flex;flex-direction:column;gap:6px;margin-top:12px;}
+  .teclado-resultados{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:10px;}
   .teclado-resultados:empty{margin-top:0;}
+  /* Libros que coinciden: tres por línea, cada uno con su color */
   .libro-resultado{
-    border:none;border-radius:10px;padding:12px 14px;background:#252525;color:#fff;
-    font-family:inherit;font-size:.95rem;text-align:left;cursor:pointer;
+    --c:#fff;
+    border:none;border-radius:9px;padding:9px 4px;background:#252525;color:var(--c);
+    font-family:inherit;font-size:.82rem;font-weight:700;text-align:center;cursor:pointer;
+    line-height:1.15;
   }
-  .libro-resultado.actual{background:var(--blue);}
+  .libro-resultado.largo{font-size:.7rem;letter-spacing:-.2px;padding-left:2px;padding-right:2px;}
+  .libro-resultado.actual{background:#1c2f40;box-shadow:inset 0 0 0 2px var(--c);}
+  .teclado-resultados .teclado-vacio{grid-column:1 / -1;}
   .teclado-vacio{color:var(--muted);font-size:.85rem;text-align:center;padding:8px 0;}
   /* Pantallita donde se ve lo que se va escribiendo (ej. "Marcos 1-1") */
   .teclado-pantalla{
@@ -124,14 +132,12 @@
   @keyframes parpadeo{50%{opacity:0;}}
   @media (prefers-reduced-motion: reduce){ .teclado-texto .cursor{animation:none;} }
   .teclado-limpiar{border:none;background:none;color:var(--muted);font-size:.8rem;cursor:pointer;padding:4px 6px;flex-shrink:0;}
-  .teclado-numeros{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;margin-top:10px;}
-  .teclado-numeros .tecla{width:auto;height:42px;font-size:1.1rem;}
   .tecla.tecla-guion{background:#3d3d3d;}
   .tecla.tecla-borrar{background:#3d3d3d;}
   .tecla:disabled{opacity:.3;cursor:default;}
   .tecla:focus-visible, .libro-resultado:focus-visible, .teclado-ir:focus-visible{outline:2px solid #fff;outline-offset:2px;}
   .teclado-ir{
-    width:100%;margin-top:8px;border:none;border-radius:10px;padding:12px;background:var(--blue);
+    width:100%;margin-top:10px;border:none;border-radius:10px;padding:12px;background:var(--blue);
     color:#fff;font-family:inherit;font-size:1rem;font-weight:700;cursor:pointer;
   }
   .teclado-ir:disabled{opacity:.4;cursor:default;}
@@ -410,7 +416,6 @@
       </div>
       <div class="teclado-letras" id="tecladoLetras"></div>
       <div class="teclado-resultados" id="tecladoResultados"></div>
-      <div class="teclado-numeros" id="tecladoNumeros"></div>
       <button class="teclado-ir" id="tecladoIr" disabled>Ir al versículo</button>
       <div class="teclado-msg" id="tecladoMsg"></div>
     </div>
@@ -1508,6 +1513,44 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   }
   const tieneLetras = () => /[A-Z]/.test(teclado.prefijo);
 
+  // Libros contra los que se validan los números: el elegido o, si aún no se
+  // eligió, todos los que coinciden con las letras escritas.
+  function librosParaNumeros(){
+    const destino = libroDestino();
+    return destino ? [destino] : candidatos(teclado.prefijo);
+  }
+  function capitulosDe(b){ return b.numberOfChapters || b.chapters.length || 1; }
+  function maxCapitulo(libros){
+    return libros.reduce((m, b) => Math.max(m, capitulosDe(b)), 0);
+  }
+  function maxVersiculo(libros, cap){
+    return libros.reduce((m, b) => Math.max(m, (b.chapters[cap - 1] || []).length), 0);
+  }
+  // ¿Se puede añadir este dígito sin pasarse de los capítulos/versículos que existen?
+  function digitoPermitido(d){
+    const libros = librosParaNumeros();
+    if(!libros.length) return false;
+    const [capTxt, verTxt] = teclado.numeros.split('-');
+    if(verTxt === undefined){
+      const n = parseInt((capTxt || '') + d, 10);
+      return !((capTxt || '') === '' && d === '0') && n >= 1 && n <= maxCapitulo(libros);
+    }
+    const cap = parseInt(capTxt, 10);
+    const n = parseInt(verTxt + d, 10);
+    return !(verTxt === '' && d === '0') && n >= 1 && n <= maxVersiculo(libros, cap);
+  }
+  function guionPermitido(){
+    if(!teclado.numeros || teclado.numeros.includes('-')) return false;
+    const libros = librosParaNumeros();
+    const cap = parseInt(teclado.numeros, 10);
+    return cap >= 1 && cap <= maxCapitulo(libros) && maxVersiculo(libros, cap) > 0;
+  }
+  // Con el libro ya definido las letras se apagan: ahora tocan los números
+  const libroDefinido = () => !!libroDestino();
+  // Todavía se está escribiendo el número del nombre ("1" de 1 Samuel):
+  // no hay letras y el libro aún no queda definido (con "3" ya es 3 Juan)
+  const escribiendoNumeroDelNombre = () => !teclado.libro && !tieneLetras() && !libroDestino();
+
   function abrirTeclado(){
     $('tecladoLibros').style.display = 'block';
     $('btnTecladoLibros').classList.add('abierto');
@@ -1532,8 +1575,8 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   // ----- Lo que hace cada tecla -----
   function pulsarLetra(letra){
     $('tecladoMsg').textContent = '';
-    // Si ya había libro o números, una letra nueva empieza otra búsqueda
-    if(teclado.libro || teclado.numeros){ limpiarTeclado(); }
+    // Con el libro ya elegido las letras no hacen nada (se usa ⌫ o Borrar todo)
+    if(libroDefinido() || teclado.numeros) return;
     if(!candidatos(teclado.prefijo + letra).length) return;
     teclado.prefijo += letra;
     renderTeclado();
@@ -1542,23 +1585,20 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   function pulsarNumero(d){
     $('tecladoMsg').textContent = '';
     // Sin letras todavía: el 1, 2 o 3 es parte del nombre ("1 Samuel")
-    if(!teclado.libro && !tieneLetras()){
+    if(escribiendoNumeroDelNombre()){
       if(teclado.prefijo === '' && candidatos(d).length) teclado.prefijo = d;
       renderTeclado();
       return;
     }
     // Ya hay libro (o letras): son capítulo / versículo
-    const partes = teclado.numeros.split('-');
-    const actual = partes[partes.length - 1];
-    if(actual === '' && d === '0') return;   // no se empieza con 0
-    if(actual.length >= 3) return;           // máximo 150 capítulos / 176 versículos
+    if(!digitoPermitido(d)) return;         // no existe ese capítulo/versículo
     teclado.numeros += d;
     renderTeclado();
   }
 
   function pulsarGuion(){
     $('tecladoMsg').textContent = '';
-    if(!teclado.numeros || teclado.numeros.includes('-')) return;
+    if(!guionPermitido()) return;
     teclado.numeros += '-';
     renderTeclado();
   }
@@ -1627,7 +1667,6 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   function renderTeclado(){
     const libro = libroDestino();
     const nombreLibro = teclado.libro ? teclado.libro.commonName : null;
-    const escribiendoLibro = !teclado.libro && !teclado.numeros;
 
     // Pantallita
     const txt = $('tecladoTexto');
@@ -1642,52 +1681,49 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
         ? p.charAt(0) + (p.length > 1 ? ' ' + p.charAt(1) + p.slice(2).toLowerCase() : '')
         : p.charAt(0) + p.slice(1).toLowerCase();
       let base = nombreLibro || prefBonito;
-      if(!nombreLibro && libro && teclado.numeros) base = libro.commonName;
+      if(!nombreLibro && libro) base = libro.commonName;   // ya quedó un solo libro
       txt.textContent = base + (teclado.numeros ? ' ' + teclado.numeros : '');
       const cursor = document.createElement('span'); cursor.className = 'cursor';
       txt.appendChild(cursor);
     }
 
-    // Letras: solo se encienden las que llevan a algún libro
-    const letras = $('tecladoLetras');
-    letras.innerHTML = '';
-    const baseLetras = escribiendoLibro ? teclado.prefijo : '';
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letra => {
-      const sirve = candidatos(baseLetras + letra).length > 0;
-      letras.appendChild(crearTecla(letra, sirve ? '' : 'vacia', () => pulsarLetra(letra), sirve));
+    // Un solo teclado: fila de números, letras y al final guion y borrar
+    const tec = $('tecladoLetras');
+    tec.innerHTML = '';
+    const modoNombre = escribiendoNumeroDelNombre();   // 1-3 para "1 Samuel"
+    '1234567890'.split('').forEach(d => {
+      let ok;
+      if(modoNombre) ok = teclado.prefijo === '' && candidatos(d).length > 0;
+      else ok = digitoPermitido(d);
+      tec.appendChild(crearTecla(d, 'tecla-num', () => pulsarNumero(d), ok));
     });
+    // Letras: solo se encienden las que llevan a algún libro
+    const letrasActivas = !libroDefinido() && !teclado.numeros;
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').forEach(letra => {
+      const sirve = letrasActivas && candidatos(teclado.prefijo + letra).length > 0;
+      tec.appendChild(crearTecla(letra, sirve ? '' : 'vacia', () => pulsarLetra(letra), sirve));
+    });
+    const guionOk = !modoNombre && guionPermitido();
+    tec.appendChild(crearTecla('-', 'tecla-guion doble', pulsarGuion, guionOk, 'Guion: separa capítulo y versículo'));
+    const borrarOk = !!(teclado.numeros || teclado.libro || teclado.prefijo);
+    tec.appendChild(crearTecla('⌫', 'tecla-borrar doble', pulsarBorrar, borrarOk, 'Borrar'));
 
-    // Lista de libros que coinciden (se mantiene visible para poder cambiar)
+    // Libros que coinciden: tres por línea, cada uno de un color distinto
+    const COLORES_LIBROS = ['#ffd166', '#7fd8ff', '#9ef08a', '#ff9ecb', '#c7a6ff', '#ffb37a'];
     const cont = $('tecladoResultados');
     cont.innerHTML = '';
     const lista = candidatos(teclado.prefijo);
     if(teclado.prefijo && lista.length){
-      lista.forEach(b => {
+      lista.forEach((b, i) => {
         const btn = document.createElement('button');
         const marcado = teclado.libro ? b.id === teclado.libro.id : (lista.length === 1);
-        btn.className = 'libro-resultado' + (marcado ? ' actual' : '');
+        btn.className = 'libro-resultado' + (marcado ? ' actual' : '') + (b.commonName.length > 12 ? ' largo' : '');
+        btn.style.setProperty('--c', COLORES_LIBROS[i % COLORES_LIBROS.length]);
         btn.textContent = b.commonName;
         btn.addEventListener('click', () => elegirLibro(b));
         cont.appendChild(btn);
       });
     }
-
-    // Números, guion y borrar
-    const nums = $('tecladoNumeros');
-    nums.innerHTML = '';
-    const partes = teclado.numeros.split('-');
-    const actual = partes[partes.length - 1];
-    const modoNombre = !teclado.libro && !tieneLetras();   // 1-3 para "1 Samuel"
-    '1234567890'.split('').forEach(d => {
-      let ok;
-      if(modoNombre) ok = teclado.prefijo === '' && candidatos(d).length > 0;
-      else ok = !(actual === '' && d === '0') && actual.length < 3;
-      nums.appendChild(crearTecla(d, '', () => pulsarNumero(d), ok));
-    });
-    const guionOk = !modoNombre && teclado.numeros !== '' && !teclado.numeros.includes('-');
-    nums.appendChild(crearTecla('-', 'tecla-guion', pulsarGuion, guionOk, 'Guion: separa capítulo y versículo'));
-    const borrarOk = !!(teclado.numeros || teclado.libro || teclado.prefijo);
-    nums.appendChild(crearTecla('⌫', 'tecla-borrar', pulsarBorrar, borrarOk, 'Borrar'));
 
     // Botón Ir
     const ir = $('tecladoIr');
