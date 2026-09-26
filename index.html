@@ -729,6 +729,8 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
 
   // ---------- Screen navigation ----------
   function showScreen(id){
+    // Si ya estamos en esa pantalla no se toca el scroll (antes saltaba arriba)
+    if($(id).classList.contains('active')) return;
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
     $(id).classList.add('active');
     window.scrollTo(0,0);
@@ -1950,7 +1952,14 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     document.body.classList.add('showing-image');
     renderQuickImages();
     renderImagesGrid();
-    showScreen('screen-home');
+    // Desde la galería de Imágenes: vuelve al inicio y muestra la imagen proyectada.
+    // Desde las miniaturas del inicio: se queda donde estaba, sin saltar.
+    if(!$('screen-home').classList.contains('active')){
+      showScreen('screen-home');
+      if(!document.body.classList.contains('projecting')){
+        $('displayPanel').scrollIntoView({block:'center'});
+      }
+    }
   }
 
   // Vuelve al versículo (o canción) que estaba proyectado antes de la imagen
