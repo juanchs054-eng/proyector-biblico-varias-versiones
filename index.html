@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Proyector Bíblico RV</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0a0a0a">
@@ -30,6 +30,13 @@
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
+  /* La página no se agranda ni se achica y solo se mueve hacia arriba/abajo */
+  html,body{
+    max-width:100%;overflow-x:hidden;overflow-x:clip;
+    touch-action:pan-x pan-y;            /* sin pellizco ni doble toque para zoom */
+    -webkit-text-size-adjust:100%;text-size-adjust:100%;
+  }
+  .quick-images-strip{touch-action:pan-x pan-y;}
   body{
     background:var(--bg);
     color:var(--text);
@@ -179,7 +186,8 @@
   .selectbtn .chev{color:var(--muted);font-size:.8rem;}
 
   /* Cuadrícula de versiones: 2 columnas, tantas filas como haga falta */
-  .version-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .version-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+  .version-grid .selectbtn{padding:12px 4px;font-size:.88rem;white-space:nowrap;justify-content:center;}
   .ver-select{padding:12px 10px;font-size:.92rem;}
 
   button{font-family:inherit;cursor:pointer;border:none;color:#fff;}
@@ -211,7 +219,16 @@
   }
   #displayRef{color:#4fa8e0;font-size:1rem;margin-top:12px;font-weight:600;}
   #displayEmpty{color:#5a5a5a;font-size:1.05rem;}
-  .display-controls{display:flex;gap:12px;align-items:center;margin-top:20px;width:100%;justify-content:center;}
+  .display-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:20px;width:100%;justify-content:center;}
+  .display-controls .icon-btn{width:42px;height:42px;}
+  .ver-mini-grupo{display:flex;gap:6px;justify-content:center;}
+  .ver-sep{width:1px;height:24px;background:#3a3a3a;}
+  /* En el celular las versiones bajan a su propia línea, bien centradas */
+  @media (max-width:520px){
+    body:not(.projecting) .ver-sep{display:none;}
+    body:not(.projecting) .ver-mini-grupo{flex-basis:100%;}
+    body:not(.projecting) .ver-mini-grupo .ver-btn-mini{flex:1;max-width:96px;}
+  }
   /* En pantalla completa: los controles se van a la esquina para dejar
      todo el espacio al versículo */
   body.projecting #displayControls{
@@ -471,10 +488,12 @@
         <button class="icon-btn" id="btnAchicarProy" title="Achicar letra">−</button>
         <button class="icon-btn" id="btnAgrandarProy" title="Agrandar letra">+</button>
         <button class="icon-btn" id="btnCopiar" title="Copiar">⧉</button>
-        <button class="icon-btn" id="btnCompartir" title="Compartir">↗</button><span style="width:1px;height:24px;background:#3a3a3a;"></span>
-        <button class="ver-btn-mini" id="proyBtn1909" style="background:var(--blue);">RV1909</button>
-        <button class="ver-btn-mini" id="proyBtn1960">RV1960</button>
-        <button class="ver-btn-mini" id="proyBtnNVI">NVI</button>
+        <button class="icon-btn" id="btnCompartir" title="Compartir">↗</button><span class="ver-sep"></span>
+        <span class="ver-mini-grupo">
+          <button class="ver-btn-mini" id="proyBtn1909" style="background:var(--blue);">RV1909</button>
+          <button class="ver-btn-mini" id="proyBtn1960">RV1960</button>
+          <button class="ver-btn-mini" id="proyBtnNVI">NVI</button>
+        </span>
       </div>
 
       <!-- Miniaturas dentro del panel: cambiar de imagen sin salir de la proyección -->
