@@ -302,6 +302,24 @@
   body.projecting.showing-image #displayRef,
   body.projecting.showing-image #displayControls{display:none !important;}
 
+
+  /* ---- Teclado de libros dentro de la proyección ---- */
+  #btnTecladoProy{display:none;}
+  #proyTecladoWrap{display:none;}
+  body.projecting #btnTecladoProy{
+    display:flex;position:fixed;top:12px;right:12px;width:42px;height:42px;
+    border:none;border-radius:12px;background:#242424;color:#fff;font-size:1.25rem;
+    align-items:center;justify-content:center;cursor:pointer;z-index:1002;opacity:.9;
+  }
+  body.projecting #btnTecladoProy.abierto{background:var(--blue);}
+  body.projecting.showing-image #btnTecladoProy{display:none;}
+  body.projecting #proyTecladoWrap{
+    display:block;position:fixed;top:62px;right:12px;width:min(380px,calc(100vw - 24px));
+    max-height:calc(100vh - 74px);overflow-y:auto;z-index:1001;
+    border-radius:var(--radius);box-shadow:0 8px 28px rgba(0,0,0,.7);
+  }
+  body.projecting #proyTecladoWrap .teclado-libros{margin-bottom:0;}
+
   .display-controls .btn{margin:0;width:auto;padding:12px 20px;}
   .icon-btn{background:#242424;color:#fff;width:46px;height:46px;border-radius:12px;font-size:1.15rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
 
@@ -512,6 +530,10 @@
           <button class="ver-btn-mini" id="proyBtnNVI">NVI</button>
         </span>
       </div>
+
+      <!-- Botón propio y contenedor del teclado de libros en la proyección -->
+      <button id="btnTecladoProy" title="Buscar libro por letra">⌨</button>
+      <div id="proyTecladoWrap"></div>
 
       <!-- Miniaturas dentro del panel: cambiar de imagen sin salir de la proyección -->
       <div class="panel-images" id="panelImages" style="display:none;">
@@ -1100,6 +1122,7 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   function enterFullscreen(){
     projecting = true;
     document.body.classList.add('projecting');
+    if(window.__tecladoAProyeccion) window.__tecladoAProyeccion();
     syncEntrarSalirButton();
     // Pedimos pantalla completa real porque Chrome solo autoriza el giro
     // forzado a horizontal cuando la página está en pantalla completa.
@@ -1113,6 +1136,7 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   function exitFullscreen(){
     projecting = false;
     document.body.classList.remove('projecting');
+    if(window.__tecladoAInicio) window.__tecladoAInicio();
     syncEntrarSalirButton();
     unlockOrientation();
     try{
@@ -1604,17 +1628,41 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
   function abrirTeclado(){
     $('tecladoLibros').style.display = 'block';
     $('btnTecladoLibros').classList.add('abierto');
+    $('btnTecladoProy').classList.add('abierto');
     renderTeclado();
   }
   function cerrarTeclado(){
     $('tecladoLibros').style.display = 'none';
     $('btnTecladoLibros').classList.remove('abierto');
+    $('btnTecladoProy').classList.remove('abierto');
   }
   function tecladoAbierto(){ return $('tecladoLibros').style.display !== 'none'; }
   function limpiarTeclado(){
     teclado.prefijo = ''; teclado.libro = null; teclado.numeros = '';
     $('tecladoMsg').textContent = '';
   }
+
+  // El mismo teclado se muda a la pantalla de proyección y vuelve al salir
+  const tecladoMarca = document.createComment('teclado-libros');
+  $('tecladoLibros').parentNode.insertBefore(tecladoMarca, $('tecladoLibros'));
+  function tecladoAProyeccion(){
+    cerrarTeclado();
+    $('proyTecladoWrap').appendChild($('tecladoLibros'));
+  }
+  function tecladoAInicio(){
+    cerrarTeclado();
+    tecladoMarca.parentNode.insertBefore($('tecladoLibros'), tecladoMarca.nextSibling);
+  }
+  window.__tecladoAProyeccion = tecladoAProyeccion;
+  window.__tecladoAInicio = tecladoAInicio;
+  $('btnTecladoProy').addEventListener('click', () => {
+    if(tecladoAbierto()) cerrarTeclado(); else abrirTeclado();
+  });
+  // Tocar el teclado no debe pasar de versículo por el deslizamiento
+  ['touchstart','touchend'].forEach(ev => {
+    $('proyTecladoWrap').addEventListener(ev, e => e.stopPropagation(), {passive:true});
+    $('btnTecladoProy').addEventListener(ev, e => e.stopPropagation(), {passive:true});
+  });
 
   $('btnTecladoLibros').addEventListener('click', () => {
     if(tecladoAbierto()) cerrarTeclado(); else abrirTeclado();
