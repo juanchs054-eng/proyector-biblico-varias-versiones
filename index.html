@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, must-revalidate">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Proyector Bíblico RV</title>
 <link rel="manifest" href="manifest.json">
@@ -2100,8 +2101,21 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
 })();
 
 if('serviceWorker' in navigator){
+  // Actualización automática: busca versión nueva cada vez que se abre la app
+  // y recarga sola cuando la encuentra (ya no hace falta borrar la caché).
+  let recargando = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if(recargando) return;
+    recargando = true;
+    window.location.reload();
+  });
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(err => console.log('SW error', err));
+    navigator.serviceWorker.register('sw.js', {updateViaCache:'none'}).then(reg => {
+      reg.update().catch(()=>{});
+      document.addEventListener('visibilitychange', () => {
+        if(document.visibilityState === 'visible') reg.update().catch(()=>{});
+      });
+    }).catch(err => console.log('SW error', err));
   });
 }
 </script>
