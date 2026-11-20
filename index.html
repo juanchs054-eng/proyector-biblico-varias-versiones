@@ -287,7 +287,7 @@
   .panel-images .quick-thumb{width:46px;height:46px;opacity:.85;}
   .panel-images .quick-thumb.active{opacity:1;}
   body.projecting .panel-images{
-    position:fixed;left:0;bottom:12px;margin:0;padding:0 14px;z-index:5;
+    position:fixed;left:0;bottom:12px;margin:0;padding:0 14px 0 64px;z-index:5;
     width:auto;max-width:calc(100vw - 190px);
   }
   body.projecting .panel-images .quick-images-strip{justify-content:flex-start;}
@@ -308,14 +308,14 @@
   #btnTecladoProy{display:none;}
   #proyTecladoWrap{display:none;}
   body.projecting #btnTecladoProy{
-    display:flex;position:fixed;top:12px;right:12px;width:42px;height:42px;
+    display:flex;position:fixed;bottom:12px;left:12px;width:42px;height:42px;
     border:none;border-radius:12px;background:#242424;color:#fff;font-size:1.25rem;
     align-items:center;justify-content:center;cursor:pointer;z-index:1002;opacity:.9;
   }
   body.projecting #btnTecladoProy.abierto{background:var(--blue);}
   body.projecting.showing-image #btnTecladoProy{display:none;}
   body.projecting #proyTecladoWrap{
-    display:block;position:fixed;top:62px;right:12px;width:min(380px,calc(100vw - 24px));
+    display:block;position:fixed;bottom:62px;left:12px;width:min(380px,calc(100vw - 24px));
     max-height:calc(100vh - 74px);overflow-y:auto;z-index:1001;
     border-radius:var(--radius);box-shadow:0 8px 28px rgba(0,0,0,.7);
   }
@@ -800,11 +800,20 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     state.version = v;
     try{ localStorage.setItem(VERSION_KEY, v); }catch(e){}
     // Se recuerda dónde estaba el usuario para no perder la lectura
-    const libroActual = state.currentBook ? state.currentBook.commonName : null;
+    const libroAnt = state.currentBook || null;
+    const libroActual = libroAnt ? libroAnt.commonName : null;
+    const libroPos = libroAnt ? state.books.findIndex(b => b === libroAnt || b.id === libroAnt.id) : -1;
+    const totalAnt = state.books.length;
     const capActual = state.currentChapter || 1;
     const versActual = state.currentVerseIndex || 0;
+    const numVerActual = state.verses[versActual] ? state.verses[versActual].number : (versActual + 1);
     if(!construirLibros()) return;
-    let libro = state.books.find(b => b.commonName === libroActual);
+    // El libro se busca por posición (todas las versiones tienen el mismo orden);
+    // si no coincide la cantidad de libros, se busca por nombre sin acentos.
+    const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+    let libro = null;
+    if(libroPos >= 0 && state.books.length === totalAnt) libro = state.books[libroPos];
+    if(!libro) libro = state.books.find(b => norm(b.commonName) === norm(libroActual));
     if(!libro) libro = state.books[0];
     state.currentBook = libro;
     $('libroNombre').textContent = libro.commonName;
@@ -812,7 +821,10 @@ window.BIBLIA_1909 = [{"name": "Génesis", "chapters": [["En el principio crió 
     pintarBotonesVersion();
     const cap = Math.min(capActual, libro.numberOfChapters);
     loadChapter(cap, false);
-    state.currentVerseIndex = Math.min(versActual, state.verses.length - 1);
+    // Mantiene el mismo número de versículo (si existe en la otra versión)
+    let idxVer = state.verses.findIndex(v => v.number === numVerActual);
+    if(idxVer < 0) idxVer = Math.max(0, Math.min(versActual, state.verses.length - 1));
+    state.currentVerseIndex = idxVer;
     $('versiculoNum').textContent = state.verses[state.currentVerseIndex]
       ? state.verses[state.currentVerseIndex].number : '';
     showVerse();
